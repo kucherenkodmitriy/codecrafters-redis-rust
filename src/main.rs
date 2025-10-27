@@ -1,7 +1,8 @@
 use std::io::{Read, Write};
-use std::net::TcpListener;
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpListener;
 use crate::resp_parser::domain::command_handler::CommandHandler;
-use crate::resp_parser::domain::stream_chunking_service::{StreamChunkingService, StreamChunkingServiceError, StringCommand};
+use crate::resp_parser::domain::stream_chunking_service::{StreamChunkingService, StreamChunkingServiceError};
 use crate::resp_parser::infra::new_line_stream_chunking_service::NewLineStreamChunkingService;
 use crate::resp_parser::domain::resp_command::RespCommand;
 use crate::resp_parser::infra::memory::command_repository::CommandRepository;
@@ -9,30 +10,25 @@ use crate::resp_parser::infra::memory::query_repository::QueryRepository;
 
 mod resp_parser;
 
-fn main() {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    println!("Logs from your program will appear here!");
+#[tokio::main]
+async fn main() {
 
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:6379").await.unwrap();
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                handle_connection(stream);
-            }
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
+    loop {
+        let (stream, _) = listener.accept().await.unwrap();
+        tokio::spawn(async move {
+            handle_connection(stream).await;
+        });
     }
 }
 
-fn handle_connection(mut stream: std::net::TcpStream) {
+async fn handle_connection(mut stream: tokio::net::TcpStream) {
     let mut buffer = [0; 512];
     let mut chunking_service = NewLineStreamChunkingService::new();
 
     loop {
-        match stream.read(&mut buffer) {
+        match stream.read(&mut buffer).await {
             Ok(0) => {
                 println!("Connection closed");
                 return;
@@ -50,7 +46,7 @@ fn handle_connection(mut stream: std::net::TcpStream) {
                                     Ok(resp_command) => {
                                         match process_command(resp_command) {
                                             Ok(response) => {
-                                                write_response(&mut stream, &response);
+                                                write_response(&mut stream, &response).await;
                                             },
                                             Err(e) => {
                                                 let error_response = format!("-ERR {}\r\n", e);
@@ -93,6 +89,7 @@ fn process_command(command: RespCommand) -> Result<String, String> {
         .map(|resp_response| resp_response.to_resp())
 }
 
-fn write_response(stream: &mut std::net::TcpStream, response: &str) {
-    stream.write(response.as_bytes()).unwrap();
+async fn write_response(stream: &mut tokio::net::TcpStream, response: &str) {
+    use tokio::io::AsyncWriteExt;
+    stream.write_all(response.as_bytes()).await.unwrap();
 }

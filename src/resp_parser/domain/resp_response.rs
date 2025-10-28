@@ -17,6 +17,10 @@ impl RespResponse {
         RespResponse::SimpleString("PONG".to_string())
     }
 
+    pub fn echo(message: impl Into<String>) -> Self {
+        RespResponse::SimpleString(message.into())
+    }
+
     pub fn to_resp(self) -> String {
         match self {
             RespResponse::SimpleString(s) => format!("+{}\r\n", s),

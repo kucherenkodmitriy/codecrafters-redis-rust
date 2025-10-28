@@ -15,7 +15,7 @@ pub enum CommandHandlerError {
 }
 
 pub enum CommandHandlerResultStatus {
-    Ok,
+    Ok(Option<String>),
     Err(CommandHandlerError),
 }
 
@@ -51,8 +51,14 @@ impl CommandHandler {
 
     pub fn handle_command(&self, command: RespCommand) -> CommandHandlerResult {
         match &command {
-            RespCommand::Ping { message: _message } => {
-                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok)
+            RespCommand::Ping { message } => {
+                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
+            },
+            RespCommand::Echo { message } => {
+                let message = message
+                    .as_ref()
+                    .map(|bytes| String::from_utf8_lossy(&bytes).to_string());
+                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(message))
             }
             // Handle other commands here
         }

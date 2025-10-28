@@ -4,6 +4,9 @@ pub enum RespCommand {
     Ping {
         message: Option<Vec<u8>>,
     },
+    Echo {
+        message: Option<Vec<u8>>,
+    }
     //...
 }
 
@@ -16,6 +19,7 @@ impl RespCommand {
 
         match command.to_uppercase().as_str() {
             "PING" => Ok(RespCommand::Ping { message: split_command.next().map(|s| s.as_bytes().to_vec()) }),
+            "ECHO" => Ok(RespCommand::Echo { message: split_command.next().map(|s| s.as_bytes().to_vec()) }),
             _ => Err(format!("Unknown command: {}", command)),
         }
     }
@@ -35,5 +39,18 @@ mod tests {
     fn test_parse_command_unknown_command() {
         let command = RespCommand::parse(StringCommand::new("GGET\r\n".to_string()));
         assert!(command.is_err());
+    }
+
+    #[test]
+    fn test_echo_command() {
+        let command = RespCommand::parse(StringCommand::new("ECHO\r\nHey\r\n".to_string()));
+        assert!(command.is_ok());
+        let command = command.unwrap();
+        match command {
+            RespCommand::Echo { message } => {
+                assert_eq!(message, Some("Hey".as_bytes().to_vec()));
+            },
+            _ => panic!("Unexpected command type")
+        }
     }
 }

@@ -14,18 +14,20 @@ impl ResponseBuilder {
         match command {
             RespCommand::Ping { message } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(_) => {
-                        Ok(RespResponse::pong())
-                    },
+                    CommandHandlerResultStatus::Ok(_) => Ok(RespResponse::pong()),
                     _ => Err("Mismatched command result for PING".to_string()),
                 }
             },
             RespCommand::Echo { message } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(Some(message)) => {
-                        Ok(RespResponse::echo(message))
-                    },
-                    _ => Err("Mismatched command result for PING".to_string()),
+                    CommandHandlerResultStatus::Ok(Some(msg)) => Ok(RespResponse::echo(msg)),
+                    _ => Err("Mismatched command result for ECHO".to_string()),
+                }
+            },
+            RespCommand::Set { key, value } => {
+                match handler_result.get_status() {
+                    CommandHandlerResultStatus::Ok(_) => Ok(RespResponse::set()),
+                    _ => Err("Mismatched command result for SET".to_string()),
                 }
             }
         }

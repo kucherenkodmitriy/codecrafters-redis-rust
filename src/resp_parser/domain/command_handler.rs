@@ -49,7 +49,7 @@ impl CommandHandler {
         }
     }
 
-    pub fn handle_command(&self, command: RespCommand) -> CommandHandlerResult {
+    pub async fn handle_command(&self, command: RespCommand) -> CommandHandlerResult {
         match &command {
             RespCommand::Ping { message } => {
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
@@ -59,6 +59,10 @@ impl CommandHandler {
                     .as_ref()
                     .map(|bytes| String::from_utf8_lossy(&bytes).to_string());
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(message))
+            },
+            RespCommand::Set { key, value } => {
+                self.command_repository.set(key.clone(), value.clone()).await;
+                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
             }
             // Handle other commands here
         }

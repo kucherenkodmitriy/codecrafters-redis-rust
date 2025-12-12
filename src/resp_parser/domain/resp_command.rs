@@ -6,6 +6,10 @@ pub enum RespCommand {
     },
     Echo {
         message: Option<Vec<u8>>,
+    },
+    Set {
+        key: Vec<u8>,
+        value: Vec<u8>,
     }
     //...
 }
@@ -20,6 +24,10 @@ impl RespCommand {
         match command.to_uppercase().as_str() {
             "PING" => Ok(RespCommand::Ping { message: split_command.next().map(|s| s.as_bytes().to_vec()) }),
             "ECHO" => Ok(RespCommand::Echo { message: split_command.next().map(|s| s.as_bytes().to_vec()) }),
+            "SET" => Ok(RespCommand::Set {
+                key: split_command.next().unwrap().as_bytes().to_vec(),
+                value: split_command.next().unwrap().as_bytes().to_vec()
+            }),
             _ => Err(format!("Unknown command: {}", command)),
         }
     }
@@ -52,5 +60,19 @@ mod tests {
             },
             _ => panic!("Unexpected command type")
         }
+    }
+
+    #[test]
+    fn test_set_command() {
+        let command = RespCommand::parse(StringCommand::new("SET\r\nkey\r\nvalue\r\n".to_string()));
+        assert!(command.is_ok());
+        let command = command.unwrap();
+        match command {
+            RespCommand::Set { key, value } => {
+                assert_eq!(key, "key".as_bytes().to_vec());
+                assert_eq!(value, "value".as_bytes().to_vec());
+            },
+            _ => panic!("Unexpected command type")
+        }   
     }
 }

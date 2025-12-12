@@ -21,6 +21,10 @@ impl RespResponse {
         RespResponse::SimpleString(message.into())
     }
 
+    pub fn set() -> Self {
+        RespResponse::SimpleString("OK".to_string())
+    }
+
     pub fn to_resp(self) -> String {
         match self {
             RespResponse::SimpleString(s) => format!("+{}\r\n", s),

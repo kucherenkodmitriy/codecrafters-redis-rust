@@ -12,7 +12,7 @@ impl CommandRepository {
     }
 
     pub async fn set(&self, key: Vec<u8>, value: Vec<u8>) {
-        let mut storage_lock = self.storage.lock().await;
+        let mut storage_lock = self.storage.write().await;
         storage_lock.insert(key, value);
     }
 }

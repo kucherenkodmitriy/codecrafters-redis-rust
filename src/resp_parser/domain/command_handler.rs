@@ -7,16 +7,8 @@ pub struct CommandHandler {
     query_repository: QueryRepository,
 }
 
-pub enum CommandHandlerError {
-    UnknownCommand,
-    InvalidArguments,
-    ExecutionError(String),
-    RepositoryError(String),
-}
-
 pub enum CommandHandlerResultStatus {
     Ok(Option<String>),
-    Err(CommandHandlerError),
 }
 
 pub struct CommandHandlerResult {
@@ -51,7 +43,7 @@ impl CommandHandler {
 
     pub async fn handle_command(&self, command: RespCommand) -> CommandHandlerResult {
         match &command {
-            RespCommand::Ping { message } => {
+            RespCommand::Ping { message: _ } => {
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
             },
             RespCommand::Echo { message } => {
@@ -63,7 +55,17 @@ impl CommandHandler {
             RespCommand::Set { key, value } => {
                 self.command_repository.set(key.clone(), value.clone()).await;
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
-            }
+            },
+            RespCommand::Get { key } => {
+                match self.query_repository.get(key.clone()).await {
+                    Some(value) => {
+                        CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(Some(value)))
+                    },
+                    None => {
+                        CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
+                    }
+                }
+            },
             // Handle other commands here
         }
     }

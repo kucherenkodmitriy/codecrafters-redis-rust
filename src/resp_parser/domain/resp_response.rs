@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 pub enum RespResponse {
     SimpleString(String),
     Error(String),
@@ -9,20 +7,24 @@ pub enum RespResponse {
 }
 
 impl RespResponse {
-    pub fn ok() -> Self {
-        RespResponse::SimpleString("OK".to_string())
-    }
-
     pub fn pong() -> Self {
         RespResponse::SimpleString("PONG".to_string())
     }
 
     pub fn echo(message: impl Into<String>) -> Self {
-        RespResponse::SimpleString(message.into())
+        RespResponse::BulkString(Some(message.into().into_bytes()))
     }
 
     pub fn set() -> Self {
         RespResponse::SimpleString("OK".to_string())
+    }
+
+    pub fn get(value: impl Into<String>) -> Self {
+        RespResponse::BulkString(Some(value.into().into_bytes()))
+    }
+
+    pub fn null() -> Self {
+        RespResponse::BulkString(None)
     }
 
     pub fn to_resp(self) -> String {
@@ -42,9 +44,5 @@ impl RespResponse {
                 resp
             }
         }
-    }
-
-    pub fn error(message: impl Into<String>) -> Self {
-        RespResponse::Error(message.into())
     }
 }

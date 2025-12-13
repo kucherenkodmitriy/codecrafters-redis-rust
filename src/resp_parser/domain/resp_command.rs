@@ -10,7 +10,10 @@ pub enum RespCommand {
     Set {
         key: Vec<u8>,
         value: Vec<u8>,
-    }
+    },
+    Get {
+        key: Vec<u8>,
+    },
     //...
 }
 
@@ -27,6 +30,9 @@ impl RespCommand {
             "SET" => Ok(RespCommand::Set {
                 key: split_command.next().unwrap().as_bytes().to_vec(),
                 value: split_command.next().unwrap().as_bytes().to_vec()
+            }),
+            "GET" => Ok(RespCommand::Get {
+                key: split_command.next().unwrap().as_bytes().to_vec(),
             }),
             _ => Err(format!("Unknown command: {}", command)),
         }
@@ -45,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_parse_command_unknown_command() {
-        let command = RespCommand::parse(StringCommand::new("GGET\r\n".to_string()));
+        let command = RespCommand::parse(StringCommand::new("GET\r\n".to_string()));
         assert!(command.is_err());
     }
 
@@ -74,5 +80,18 @@ mod tests {
             },
             _ => panic!("Unexpected command type")
         }   
+    }
+
+    #[test]
+    fn test_get_command() {
+        let command = RespCommand::parse(StringCommand::new("GET\r\nkey\r\n".to_string()));
+        assert!(command.is_ok());
+        let command = command.unwrap();
+        match command {
+            RespCommand::Get { key } => {
+                assert_eq!(key, "key".as_bytes().to_vec());
+            },
+            _ => panic!("Unexpected command type")
+        }
     }
 }

@@ -12,22 +12,28 @@ impl ResponseBuilder {
     pub fn create(&self, handler_result: CommandHandlerResult) -> Result<RespResponse, String> {
         let command = handler_result.get_resp_command();
         match command {
-            RespCommand::Ping { message } => {
+            RespCommand::Ping { message: _ } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(_) => {
-                        Ok(RespResponse::pong())
-                    },
-                    _ => Err("Mismatched command result for PING".to_string()),
+                    CommandHandlerResultStatus::Ok(_) => Ok(RespResponse::pong()),
                 }
             },
-            RespCommand::Echo { message } => {
+            RespCommand::Echo { message: _ } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(Some(message)) => {
-                        Ok(RespResponse::echo(message))
-                    },
-                    _ => Err("Mismatched command result for PING".to_string()),
+                    CommandHandlerResultStatus::Ok(Some(msg)) => Ok(RespResponse::echo(msg)),
+                    _ => Err("Mismatched command result for ECHO".to_string()),
                 }
-            }
+            },
+            RespCommand::Set { key: _, value: _ } => {
+                match handler_result.get_status() {
+                    CommandHandlerResultStatus::Ok(_) => Ok(RespResponse::set()),
+                }
+            },
+            RespCommand::Get { key : _ } => {
+                match handler_result.get_status() {
+                    CommandHandlerResultStatus::Ok(Some(value)) => Ok(RespResponse::get(value)),
+                    CommandHandlerResultStatus::Ok(None) => Ok(RespResponse::null()),
+                }
+            },
         }
     }
 }

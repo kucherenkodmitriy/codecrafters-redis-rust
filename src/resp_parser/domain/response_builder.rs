@@ -19,18 +19,18 @@ impl ResponseBuilder {
             },
             RespCommand::Echo { message: _ } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(Some(msg)) => Ok(RespResponse::echo(msg)),
+                    CommandHandlerResultStatus::Ok(Some(msg)) => Ok(RespResponse::echo(msg.clone())),
                     _ => Err("Mismatched command result for ECHO".to_string()),
                 }
             },
-            RespCommand::Set { key: _, value: _ } => {
+            RespCommand::Set { key: _, value: _ , ttl: _} => {
                 match handler_result.get_status() {
                     CommandHandlerResultStatus::Ok(_) => Ok(RespResponse::set()),
                 }
             },
             RespCommand::Get { key : _ } => {
                 match handler_result.get_status() {
-                    CommandHandlerResultStatus::Ok(Some(value)) => Ok(RespResponse::get(value)),
+                    CommandHandlerResultStatus::Ok(Some(value)) => Ok(RespResponse::get(value.clone())),
                     CommandHandlerResultStatus::Ok(None) => Ok(RespResponse::null()),
                 }
             },

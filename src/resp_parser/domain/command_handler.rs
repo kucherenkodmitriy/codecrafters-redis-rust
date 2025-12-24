@@ -1,5 +1,5 @@
-use crate::resp_parser::domain::resp_command::RespCommand;
-use crate::resp_parser::infra::memory::command_repository::CommandRepository;
+use crate::resp_parser::domain::resp_command::{RespCommand, RespTtl};
+use crate::resp_parser::infra::memory::command_repository::{CommandRepository, TTL};
 use crate::resp_parser::infra::memory::query_repository::QueryRepository;
 
 pub struct CommandHandler {
@@ -8,12 +8,21 @@ pub struct CommandHandler {
 }
 
 pub enum CommandHandlerResultStatus {
-    Ok(Option<String>),
+    Ok(Option<Vec<u8>>),
 }
 
 pub struct CommandHandlerResult {
     resp_command: RespCommand,
     status: CommandHandlerResultStatus,
+}
+
+impl From<&RespTtl> for TTL {
+    fn from(resp_ttl: &RespTtl) -> Self {
+        match resp_ttl {
+            RespTtl::Seconds(s) => TTL::Seconds(s.clone()),
+            RespTtl::Milliseconds(ms) => TTL::Milliseconds(ms.clone()),
+        }
+    }
 }
 
 impl CommandHandlerResult {
@@ -41,19 +50,21 @@ impl CommandHandler {
         }
     }
 
+    // probably better to pass ownership of command here and return ownership in result
     pub async fn handle_command(&self, command: RespCommand) -> CommandHandlerResult {
         match &command {
             RespCommand::Ping { message: _ } => {
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
             },
             RespCommand::Echo { message } => {
-                let message = message
-                    .as_ref()
-                    .map(|bytes| String::from_utf8_lossy(&bytes).to_string());
-                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(message))
+                CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(message.clone()))
             },
-            RespCommand::Set { key, value } => {
-                self.command_repository.set(key.clone(), value.clone()).await;
+            RespCommand::Set { key, value, ttl } => {
+                let ttl: TTL = match ttl {
+                    Some(resp_ttl) => TTL::from(resp_ttl),
+                    None => TTL::Indefinite,
+                };
+                self.command_repository.set(key.clone(), value.clone(), ttl).await;
                 CommandHandlerResult::new(command, CommandHandlerResultStatus::Ok(None))
             },
             RespCommand::Get { key } => {

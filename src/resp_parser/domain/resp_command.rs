@@ -10,11 +10,34 @@ pub enum RespCommand {
     Set {
         key: Vec<u8>,
         value: Vec<u8>,
+        ttl: Option<RespTtl>,
     },
     Get {
         key: Vec<u8>,
     },
     //...
+}
+
+pub enum RespTtl {
+    Seconds(u64),
+    Milliseconds(u64),
+}
+
+impl RespTtl {
+    pub fn from_seconds(seconds: u64) -> Self {
+        RespTtl::Seconds(seconds)
+    }
+
+    pub fn from_milliseconds(milliseconds: u64) -> Self {
+        RespTtl::Milliseconds(milliseconds)
+    }
+
+    pub fn to_seconds(&self) -> u64 {
+        match self {
+            RespTtl::Seconds(s) => *s,
+            RespTtl::Milliseconds(ms) => *ms / 1000,
+        }
+    }
 }
 
 impl RespCommand {
@@ -29,7 +52,8 @@ impl RespCommand {
             "ECHO" => Ok(RespCommand::Echo { message: split_command.next().map(|s| s.as_bytes().to_vec()) }),
             "SET" => Ok(RespCommand::Set {
                 key: split_command.next().unwrap().as_bytes().to_vec(),
-                value: split_command.next().unwrap().as_bytes().to_vec()
+                value: split_command.next().unwrap().as_bytes().to_vec(),
+                ttl: None,
             }),
             "GET" => Ok(RespCommand::Get {
                 key: split_command.next().unwrap().as_bytes().to_vec(),
@@ -74,7 +98,7 @@ mod tests {
         assert!(command.is_ok());
         let command = command.unwrap();
         match command {
-            RespCommand::Set { key, value } => {
+            RespCommand::Set { key, value, ttl } => {
                 assert_eq!(key, "key".as_bytes().to_vec());
                 assert_eq!(value, "value".as_bytes().to_vec());
             },

@@ -197,4 +197,23 @@ mod tests {
         assert_eq!(command.len(), 1);
         assert_eq!(command[0].to_string(), "PING\r\n");
     }
+
+    #[test]
+    fn test_new_line_stream_chunking_service_set_with_ttl() {
+        let mut service = NewLineStreamChunkingService::new();
+        let input = b"*4\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n$2\r\n10\r\n";
+        let command = service.next(input).unwrap();
+        assert_eq!(command.len(), 1);
+        assert_eq!(command[0].to_string(), "SET\r\nkey\r\nvalue\r\n10\r\n");
+    }
+
+    #[test]
+    fn test_new_line_stream_chunking_service_set_with_ttl_milliseconds() {
+        // SET mykey value PX 1000
+        let mut service = NewLineStreamChunkingService::new();
+        let input = b"*5\r\n$3\r\nSET\r\n$5\r\nmykey\r\n$5\r\nvalue\r\n$2\r\nPX\r\n$4\r\n1000\r\n";
+        let command = service.next(input).unwrap();
+        assert_eq!(command.len(), 1);
+        assert_eq!(command[0].to_string(), "SET\r\nmykey\r\nvalue\r\nPX\r\n1000\r\n");
+    }
 }

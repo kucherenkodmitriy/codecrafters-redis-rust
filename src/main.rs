@@ -54,13 +54,13 @@ async fn handle_connection(mut stream: tokio::net::TcpStream, storage: Storage) 
                                         },
                                         Err(e) => {
                                             let error_response = format!("-ERR {}\r\n", e);
-                                            write_response(&mut stream, &error_response).await;
+                                            write_response(&mut stream, error_response.as_bytes()).await;
                                         }
                                     }
                                 },
                                 Err(e) => {
                                     let error_response = format!("-ERR {}\r\n", e);
-                                    write_response(&mut stream, &error_response).await;
+                                    write_response(&mut stream, error_response.as_bytes()).await;
                                 }
                             }
                         }
@@ -81,7 +81,7 @@ async fn handle_connection(mut stream: tokio::net::TcpStream, storage: Storage) 
     }
 }
 
-async fn process_command(command: RespCommand, storage: &Storage) -> Result<String, String> {
+async fn process_command(command: RespCommand, storage: &Storage) -> Result<Vec<u8>, String> {
     let handler = CommandHandler::new(
         CommandRepository::new(storage.clone()),
         QueryRepository::new(storage.clone()),
@@ -92,7 +92,7 @@ async fn process_command(command: RespCommand, storage: &Storage) -> Result<Stri
         .map(|resp_response| resp_response.to_resp())
 }
 
-async fn write_response(stream: &mut tokio::net::TcpStream, response: &str) {
+async fn write_response(stream: &mut tokio::net::TcpStream, response: &[u8]) {
     use tokio::io::AsyncWriteExt;
-    stream.write_all(response.as_bytes()).await.unwrap();
+    stream.write_all(response).await.unwrap();
 }
